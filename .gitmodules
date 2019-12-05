@@ -1,0 +1,3 @@
+[submodule "deps/Attitude"]
+	path = deps/Attitude
+	url = git://github.com/davenquinn/Attitude.git
