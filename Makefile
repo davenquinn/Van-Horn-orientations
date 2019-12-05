@@ -1,6 +1,6 @@
 proj := data/DJI_0062_projected.json
 
-all: $(proj)
+all: data/orientations.pdf
 
 install:
 	pipenv install
@@ -24,4 +24,6 @@ data/DJI_0062.mbtiles:data/DJI_0062.PNG
 		4096 8192 16384
 
 $(proj): project-data.py data/DJI_0062.json
+data/orientations.pdf: compute-orientations.py $(proj)
 	pipenv run python $^ $@
+
