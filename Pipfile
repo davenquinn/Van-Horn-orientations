@@ -12,6 +12,7 @@ fiona = "*"
 subdivide = "*"
 metashape = {file = "http://download.agisoft.com/Metashape-1.5.5-cp35.cp36.cp37-abi3-macosx_10_8_x86_64.whl"}
 ipython = "*"
+shapely = "*"
 
 [requires]
 python_version = "3.7"

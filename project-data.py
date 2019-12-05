@@ -14,8 +14,11 @@ Photoscan API usage from
 import Metashape
 import time
 import sys
+import fiona
 from json import load, dump
 from os import path, environ
+from shapely.geometry import mapping, shape
+from shapely.ops import transform
 
 __dirname__ = path.dirname(__file__)
 __start__ = time.time()
@@ -58,7 +61,7 @@ def geometry_transformer(fn):
 #     print("Need to specify input file")
 
 file_in = sys.argv[1]
-file_out = None
+file_out = sys.argv[2]
 
 app = Metashape.app
 doc = Metashape.Document()
@@ -70,52 +73,31 @@ model = chunk.model
 # Build a directory of cameras in the active chunk
 cameras = {path.splitext(c.label)[0]: c for c in chunk.cameras}
 
+# create a point function based on image ids
+def point_function(x,y,z=None):
+    """
+    Transform individual point to 3d coordinates
+    """
+    image_id = "DJI_0062"
+    camera = cameras[image_id]
+    # Presumes image position from top left
+    # Sometimes negative Y coordinates are implicit
+    y = abs(y)
 
-def process_features(features):
-    print("Starting to process features")
+    point_2D = camera.unproject(Metashape.Vector((x,y)))
+    vect = model.pickPoint(camera.center, point_2D)
 
-    for feature in features:
-        image_id = "DJI_0062"
-        print(image_id)
+    #estimating ray and surface intersection
+    return tuple(vect)
 
-        try:
-            camera = cameras[image_id]
-        except KeyError:
-            continue
+with fiona.open(file_in,'r', driver="GeoJSON") as source:
+    with fiona.open(file_out,'w',driver=source.driver, schema=source.schema) as sink:
+        for rec in source:
+            geom = shape(rec['geometry'])
+            geom2 = transform(point_function, geom)
+            rec['geometry'] = mapping(geom2)
+            sink.write(rec)
 
-        # create a point function based on image ids
-        def point_function(coords):
-            """
-            Transform individual point to 3d coordinates
-            """
-            x,y = coords
-            # Presumes image position from top left
-            # Sometimes negative Y coordinates are implicit
-            y = abs(y)
-
-            point_2D = camera.unproject(Metashape.Vector((x,y)))
-            vect = model.pickPoint(camera.center, point_2D)
-            print(vect)
-
-            #estimating ray and surface intersection
-            return list(vect)
-
-        _ = geometry_transformer(point_function)
-        feature['geometry'] = _(feature['geometry'])
-        # Clean up
-
-        yield feature
-
-with open(file_in,'r') as f:
-    data = load(f)
-features = data["features"]
-data['features'] = list(process_features(data['features']))
-
-if not file_out:
-    print(data)
-else:
-    with open(file_out,'w') as f:
-        dump(data,f)
-
-print("--- {0} seconds ---".format(time.time()-__start__))
+__end__ = time.time()-__start__
+print(f"--- {__end__} seconds ---")
 

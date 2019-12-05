@@ -1,4 +1,6 @@
-all: make_data
+proj := data/DJI_0062_projected.json
+
+all: $(proj)
 
 install:
 	pipenv install
@@ -21,5 +23,5 @@ data/DJI_0062.mbtiles:data/DJI_0062.PNG
 		2 4 8 16 32 64 128 256 512 1024 2048 \
 		4096 8192 16384
 
-make_data: project-data.py data/DJI_0062.json
-	pipenv run python $^
+$(proj): project-data.py data/DJI_0062.json
+	pipenv run python $^ $@
