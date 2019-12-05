@@ -38,14 +38,14 @@ model = chunk.model
 
 # Build a directory of cameras in the active chunk
 cameras = {path.splitext(c.label)[0]: c for c in chunk.cameras}
+image_id = path.splitext(path.basename(file_in))[0]
+camera = cameras[image_id]
 
 # create a point function based on image ids
 def point_function(x,y,z=None):
     """
     Transform individual point to 3d coordinates
     """
-    image_id = "DJI_0062"
-    camera = cameras[image_id]
     # Presumes image position from top left
     # Sometimes negative Y coordinates are implicit
     y = abs(y)

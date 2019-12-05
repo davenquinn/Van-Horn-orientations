@@ -27,8 +27,8 @@ def plot_pole(ax, o, *args, **kwargs):
         *o.angular_errors(),
         *args, **kwargs)
 
-file_in = sys.argv[1]
-file_out = sys.argv[2]
+infiles = sys.argv[1:-1]
+file_out = sys.argv[-1]
 
 fig = plt.figure()
 
@@ -38,21 +38,39 @@ ax.set_theta_direction(-1)
 ax.set_rlim([0,60])
 ax.set_rticks([15,30,45,60])
 
-with fiona.open(file_in,'r', driver="GeoJSON") as source:
-    for rec in source:
-        g = shape(rec['geometry'])
-        coords = N.vstack([N.array(p.coords) for p in g.geoms])
-        orient = Orientation(coords)
-        type = rec['properties']['type']
-
-        ctype = "seagreen" if type == 'interlamination' else 'skyblue'
-
-        plot_pole(ax, orient, alpha=0.5, color=ctype)
-
-
 ax.grid()
+labeled = {}
+
+for file_in in infiles:
+    with fiona.open(file_in,'r', driver="GeoJSON") as source:
+        for rec in source:
+            g = shape(rec['geometry'])
+            coords = N.vstack([N.array(p.coords) for p in g.geoms])
+            orient = Orientation(coords)
+            type = rec['properties']['type']
+            if type == 'interlamination':
+                type = 'bedding'
+
+            ctype = "seagreen" if type == 'bedding' else 'skyblue'
+            zorder = 10 if type == "bedding" else 5
+
+            mx = N.radians(orient.angular_errors()[1])
+
+            opacity = 1-mx**0.5
+            if opacity < 0.1:
+                opacity = 0.1
+
+            label = None
+            if type not in labeled:
+                label = type
+                labeled[type] = True
+
+            plot_pole(
+                ax, orient, alpha=opacity, color=ctype, zorder=zorder, label=label)
+
+
 ax.grid()
 fig.legend()
 
-fig.savefig(sys.argv[2], bbox_inches='tight')
+fig.savefig(file_out, bbox_inches='tight')
 
