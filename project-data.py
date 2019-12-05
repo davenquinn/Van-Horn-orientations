@@ -13,12 +13,15 @@ Photoscan API usage from
 
 import Metashape
 import time
+import sys
 from json import load, dump
-from sys import argv
-from os import path
+from os import path, environ
 
 __dirname__ = path.dirname(__file__)
 __start__ = time.time()
+
+# Add local modules to path
+sys.path.append(path.join(__dirname__,'modules'))
 
 def cross(a, b):
     result = Metashape.Vector([a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y *b.x])
@@ -54,19 +57,15 @@ def geometry_transformer(fn):
 # except ValueError:
 #     print("Need to specify input file")
 
-file_in = path.join(__dirname__,"test-data","DJI_0263.geojson")
+file_in = sys.argv[1]
 file_out = None
 
 app = Metashape.app
 doc = Metashape.Document()
 
-doc.open("/Users/Daven/Projects/Van Horn/3D Models/Van Horn Whaleback/Van Horn whaleback v1.psx")
+doc.open(environ.get("METASHAPE_MODEL"))
 chunk = doc.chunk
 model = chunk.model
-
-#
-#file_in = app.getOpenFileName("Choose an input GeoJSON file")
-file_out = app.getSaveFileName("Choose a location to write output file")
 
 # Build a directory of cameras in the active chunk
 cameras = {path.splitext(c.label)[0]: c for c in chunk.cameras}
@@ -76,15 +75,13 @@ def process_features(features):
     print("Starting to process features")
 
     for feature in features:
-        image_id = feature['properties']['image']
+        image_id = "DJI_0062"
         print(image_id)
 
         try:
             camera = cameras[image_id]
         except KeyError:
             continue
-
-        feature['properties']['camera_center'] = list(camera.center)
 
         # create a point function based on image ids
         def point_function(coords):
@@ -96,8 +93,9 @@ def process_features(features):
             # Sometimes negative Y coordinates are implicit
             y = abs(y)
 
-            point_2D = (x,y)
-            vect = camera.unproject(point_2D)
+            point_2D = camera.unproject(Metashape.Vector((x,y)))
+            vect = model.pickPoint(camera.center, point_2D)
+            print(vect)
 
             #estimating ray and surface intersection
             return list(vect)
