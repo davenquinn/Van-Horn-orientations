@@ -29,35 +29,30 @@ from plot_colors import colors
 image_file = sys.argv[1]
 infile = sys.argv[2]
 outfile = sys.argv[3]
+dpi = 96
 
-fig = plt.figure()
-
-ax = fig.add_axes([0,0,1,1], frameon=False)
 # reading png image file
 im = image.imread(image_file)
+sz_inches = N.array(im.shape[:2])/dpi
+
+fig = plt.figure(figsize=sz_inches[::-1])
+
+ax = fig.add_axes([0,0,1,1], frameon=False)
 ax.imshow(im)
+ax.set_axis_off()
 
 # data = np.random.randint(0, 100, (256, 256))
 # save_image(data, '1.png')
 
-# with fiona.open(file_in,'r', driver="GeoJSON") as source:
-    # for rec in source:
-        # g = shape(rec['geometry'])
-        # coords = N.vstack([N.array(p.coords) for p in g.geoms])
-        # orient = Orientation(coords)
-        # type = rec['properties']['type']
-        # if type not in colors:
-            # continue
+with fiona.open(infile, 'r', driver="GeoJSON") as source:
+    for rec in source:
+        g = shape(rec['geometry'])
+        coords = N.vstack([N.array(p.coords) for p in g.geoms])
+        type = rec['properties']['type']
+        if type not in colors:
+            continue
 
-        # zorder = 10 if type == "interlamination" else 5
+        ax.plot(coords[:,0], -coords[:,1], color=colors[type], linewidth=8)
 
-        # mx = N.radians(orient.angular_errors()[1])
-        # opacity = 1-mx**0.5
-        # if opacity < 0.1:
-            # opacity = 0.1
-
-        # plot_pole(ax, orient,
-                # alpha=opacity, color=colors[type], zorder=zorder)
-
-fig.savefig(outfile, bbox_inches='tight')
+fig.savefig(outfile, dpi=dpi)
 

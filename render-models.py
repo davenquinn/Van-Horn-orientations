@@ -7,14 +7,8 @@ import Metashape
 import os
 import sys
 
-camera_labels = sys.argv[1:]
-
-def get_cameras(chunk):
-    return [camera
-            for camera in chunk.cameras
-            if camera.transform
-            and camera.type == Metashape.Camera.Type.Regular]
-
+camera_labels = [os.path.basename(i) for i in sys.argv[1:-1]]
+output_dir = sys.argv[-1]
 
 def render_cameras():
     app = Metashape.app
@@ -26,9 +20,7 @@ def render_cameras():
     if not chunk.model:
         raise Exception("No model!")
 
-    cameras = [c for chunk.cameras if c.label in camera_labels]
-    if len(cameras) == 0:
-        cameras = get_cameras(chunk)
+    cameras = [c for c in chunk.cameras if c.label in camera_labels]
 
     for camera in cameras:
         render = chunk.model.renderImage(camera.transform, camera.sensor.calibration)
@@ -36,6 +28,6 @@ def render_cameras():
         photo_filename = os.path.basename(camera.photo.path)
         render_filename = os.path.splitext(photo_filename)[0] + "_render.jpg"
         print(render_filename)
-        render.save(os.path.join("renders", render_filename))
+        render.save(os.path.join(output_dir, render_filename))
 
 render_cameras()

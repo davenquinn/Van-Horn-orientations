@@ -2,3 +2,5 @@ data
 *.lic
 .venv
 renders
+build
+output
