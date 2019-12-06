@@ -12,13 +12,19 @@ Photoscan API usage from
 """
 
 import sys
+from os import path, environ
+__dirname__ = path.dirname(__file__)
+# Add local modules to path
+sys.path.append(path.join(__dirname__,'modules'))
+
 import fiona
 import numpy as N
-from os import path, environ
 from matplotlib import pyplot as plt
 from shapely.geometry import shape
 from attitude import Orientation
 from attitude.display.polar import pole, pole_error, uncertain_pole
+from matplotlib import patches
+from plot_colors import colors
 
 def plot_pole(ax, o, *args, **kwargs):
     sdr = o.strike_dip_rake()
@@ -36,10 +42,7 @@ ax = fig.add_subplot(111, projection="polar")
 ax.set_theta_zero_location('N')
 ax.set_theta_direction(-1)
 ax.set_rlim([0,60])
-ax.set_rticks([15,30,45,60])
-
 ax.grid()
-labeled = {}
 
 for file_in in infiles:
     with fiona.open(file_in,'r', driver="GeoJSON") as source:
@@ -48,29 +51,29 @@ for file_in in infiles:
             coords = N.vstack([N.array(p.coords) for p in g.geoms])
             orient = Orientation(coords)
             type = rec['properties']['type']
-            if type == 'interlamination':
-                type = 'bedding'
+            if type not in colors:
+                continue
 
-            ctype = "seagreen" if type == 'bedding' else 'skyblue'
-            zorder = 10 if type == "bedding" else 5
+            zorder = 10 if type == "interlamination" else 5
 
             mx = N.radians(orient.angular_errors()[1])
-
             opacity = 1-mx**0.5
             if opacity < 0.1:
                 opacity = 0.1
 
-            label = None
-            if type not in labeled:
-                label = type
-                labeled[type] = True
+            plot_pole(ax, orient,
+                    alpha=opacity, color=colors[type], zorder=zorder)
 
-            plot_pole(
-                ax, orient, alpha=opacity, color=ctype, zorder=zorder, label=label)
-
+fig.legend(handles=[
+    patches.Patch(color=colors['interlamination'], label='Bedding'),
+    patches.Patch(color=colors['cross-lamination'], label='Cross-bedding')
+], frameon=False)
 
 ax.grid()
-fig.legend()
+
+#ax.set_rticks([15,30,45,60])
+#ax.grid(zorder=12)
+#ax.set_axisbelow(False)
 
 fig.savefig(file_out, bbox_inches='tight')
 
