@@ -3,6 +3,10 @@ all: output/orientations.pdf extractions build/DJI_0045.json build/DJI_0062.json
 tilesets: build/DJI_0045.mbtiles build/DJI_0062.mbtiles
 extractions: output/DJI_0045_extracted.png output/DJI_0062_extracted.png
 
+feature-count:
+	sqlite3 data/DJI_0045.mapboard-project/project.db "SELECT type, count(*) FROM linework GROUP BY type"
+	sqlite3 data/DJI_0062.mapboard-project/project.db "SELECT type, count(*) FROM linework GROUP BY type"
+
 install:
 	pipenv install
 
